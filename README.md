@@ -1,8 +1,6 @@
 RUN
-	
 	g++ main.cpp -std=c++11 -o main
-	./main RDFData Data_name tag partition
-	
+	./main RDFData Data_name tag partition part
 	(
 		tag:split the triple
 			1 " "
@@ -13,9 +11,11 @@ RUN
 			2 PCP-Basic
 			3 PCP
 			4 Subject Hash
-	)
-	Ex:	./main /data/RDFData/LUBM/LUBM10M.nt LUBM10M 1 1
 
-	Results are in Data_name/Data_nameInternalPoints.txt and Data_name/Data_namecrossingEdges.txt(1,2,3)
-				or sub_hash/Data_nameInternalPoints.txt(4)
+		part:the number of partitons
+	)
+	Ex:	./main /data/RDFData/LUBM/LUBM10M.nt LUBM10M 1 1 4
+
+	Results are in Data_nameInternalPoints.txt and Data_namecrossingEdges.txt(1,2,3)
+				or Data_namesub_hash_InternalPoints.txt(4)
 	
