@@ -20,7 +20,6 @@ graph::loadGraph(string txt_name,string tag)
 {
 	ifstream in(txt_name.data());
 	vector<pair<int,int> >tmp;
-	set<string> predicate;
 	string line;
 	while(getline(in,line))
 	{
@@ -54,7 +53,7 @@ graph::loadGraph(string txt_name,string tag)
 	in.close();
 
 
-	limit=entityCnt*0.05;
+	limit=entityCnt/part/2;
 	printf("limit: %d\n",limit);
 	printf("triples: %d\n", triples);
 	printf("entityCnt: %d\n",entityCnt);
@@ -183,7 +182,7 @@ graph::unionEdgeForEnum()
 		if(choice[i]==0)cout<<i<<"	"<<IDToPredicate[i]<<endl;
 	}
 	printf("\n");
-	unionBlock(choice,10);
+	unionBlock(choice,part);
 	delete[] invalidST;
 }
 
@@ -276,7 +275,7 @@ graph::unionEdgeForGreed()
 		if(choice[preID]==0)cout<<preID<<"	"<<IDToPredicate[preID]<<endl,crossEdge++;
 	printf("crossEdge: %d\n",crossEdge);
 	printf("\n");
-	unionBlock(choice,10);
+	unionBlock(choice,part);
 }
 void graph::greed1(vector<int> &choice,vector<int> &curParent,vector<int> &curSonCnt,vector<int> &curRank,vector<bool> &invalid)
 {
@@ -450,7 +449,7 @@ graph::greed2()
 		if(choice[preID]==0)cout<<preID<<"	"<<IDToPredicate[preID]<<endl,crossEdge++;
 	printf("crossEdge: %d\n",crossEdge);
 	printf("\n");
-	unionBlock(choice,10);
+	unionBlock(choice,part);
 }
 
 void 
@@ -499,9 +498,10 @@ graph::unionBlock(vector<int> &choice,int goal)
 
 	vector<int>CNT(goal+1,0);
 
-	if(access(RDF.c_str(), 0)==-1)
-		mkdir(RDF.c_str(),0777);
-	ofstream outFile(RDF+"/"+RDF+"InternalPoints.txt");   
+	// if(access(RDF.c_str(), 0)==-1)
+	// 	mkdir(RDF.c_str(),0777);
+	// ofstream outFile("/opt/workspace/PCP/"+RDF+"InternalPoints.txt"); 
+	ofstream outFile(RDF+"InternalPoints.txt");   
 	for(int pos,p=1;p<=entityCnt;p++)
 	{
 		pos=blockTogoal[getParent(p,parent)];
@@ -512,7 +512,8 @@ graph::unionBlock(vector<int> &choice,int goal)
 	printf("\n");
 	for(int i=1;i<=goal;i++)printf("%d %d\n",i,CNT[i]);
 
-	ofstream File(RDF+"/"+RDF+"crossingEdges.txt"); 
+	// ofstream File("/opt/workspace/PCP/"+RDF+"crossingEdges.txt"); 
+	ofstream File(RDF+"crossingEdges.txt"); 
 	for(unordered_map<string,int>::iterator it=edge_cnt.begin();it!=edge_cnt.end();it++)
 	{
 		File<<it->first<<"\t"<<it->second<<"\t";
@@ -522,7 +523,7 @@ graph::unionBlock(vector<int> &choice,int goal)
 		File<<endl;
 	}
 	File.close();
-	
+	// update();
 }
 
 void 
@@ -532,23 +533,79 @@ graph::randEntity(string txt_name,string tag)
 	string line;
 	while(getline(in,line))
 	{
+		triples++;
 		line.resize(line.length()-2);
 		vector<string> s;
 		s=split(line,tag);
-		if(entityToID.count(s[0])==0)
-		{
-			entityToID[s[0]]=++entityCnt;
-			IDToEntity.push_back(s[0]);
-		}
+		predicate.insert(s[1]);
+		for(int i=0;i<3;i+=2)if(entityToID.count(s[i])==0)
+        {
+            entityToID[s[i]]=++entityCnt;
+            IDToEntity.push_back(s[i]);
+        }
 	}
 	in.close();
-	if(access("sub_hash", 0)==-1)
-		mkdir("sub_hash",0777);
-	ofstream outFile("sub_hash/"+RDF+"InternalPoints.txt");
+	// ofstream outFile("/opt/workspace/sub_hash/"+RDF+"InternalPoints.txt");
+	ofstream outFile(RDF+"sub_hash_InternalPoints.txt");
 	for(int i=1;i<=entityCnt;i++)
 	{
-		outFile<<IDToEntity[i]<<"	"<<rand()%10<<"\n";
+		outFile<<IDToEntity[i]<<"\t"<<rand()%part<<"\n";
 	}
 	outFile.close();
+	// update();
 }
+
+// void 
+// graph::metis(string txt_name,string tag)
+// {
+//    ifstream in(txt_name.data());
+//    string str;
+//    entityCnt=0;
+//    vector<vector<int> > EDGE;
+//    EDGE.push_back(vector<int>());
+//    triples=0;
+//    while(getline(in,str))
+//    {
+//         triples++;
+//         str.resize(str.length()-2);
+//         vector<string> s;
+//         s=split(str,tag);
+//         predicate.insert(s[1]);
+//         for(int i=0;i<3;i+=2)if(entityToID.count(s[i])==0)
+//         {
+//                 entityToID[s[i]]=++entityCnt;
+//                 IDToEntity.push_back(s[i]);
+//                 EDGE.push_back(vector<int>());
+//         }
+//         EDGE[entityToID[s[0]]].push_back(entityToID[s[2]]);
+//         EDGE[entityToID[s[2]]].push_back(entityToID[s[0]]);
+//    }
+//    ofstream out(("/opt/workspace/metis/"+RDF+".tmp").data());
+//    out<<entityCnt<<" "<<triples<<endl;
+//    for(int i=1;i<EDGE.size();i++)
+//    {
+//         for(int j=0;j<EDGE[i].size();j++)
+//                 out<<EDGE[i][j]<<" ";
+//         out<<endl;
+//     }
+
+//    system(("/opt/workspace/metis-5.1.0/build/Linux-x86_64/programs/gpmetis /opt/workspace/metis/"+RDF+".tmp 4").data());
+//    ifstream In(("/opt/workspace/metis/"+RDF+".tmp.part.4").data());
+//    ofstream Out(("/opt/workspace/metis/"+RDF+"InternalPoints.txt").data());
+//    int idx=1;
+//    while(getline(In,str))
+//    {
+//         Out<<IDToEntity[idx++]<<"\t"<<atoi(str.c_str())<<endl;
+//    }
+//    update();
+// }
+
+// void 
+// graph::update()
+// {
+// 	string info="insert data{ <"+RDF+"> <triple> \""+to_string(triples)+"\" .<"+RDF+"> <entity> \""+to_string(entityCnt)+"\" .<"+RDF+"> <label> \""+to_string(predicate.size())+"\" .}";
+// 	ofstream out("/opt/workspace/gStoreD/insert.q");
+// 	out<<info;
+// 	out.close();
+// }
 
