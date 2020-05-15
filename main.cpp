@@ -9,11 +9,18 @@ main(int argc, char* argv[])
 	string name=argv[2];
 	string sign=(string(argv[3])=="1")?" ":"\t";
 	string op=argv[4];
+	int part=atoi(argv[5]);
 
 	st=clock();
 		graph* test=new graph();
 		test->init();
 		test->RDF=name;
+		test->part=part;
+		// if(op=="5")
+		// {
+		// 	test->metis(txt_name,sign);
+		// }
+		// else 
 		if(op=="4")
 		{
 			test->randEntity(txt_name,sign);
