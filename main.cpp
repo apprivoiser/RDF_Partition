@@ -16,12 +16,11 @@ main(int argc, char* argv[])
 		test->init();
 		test->RDF=name;
 		test->part=part;
-		// if(op=="5")
-		// {
-		// 	test->metis(txt_name,sign);
-		// }
-		// else 
-		if(op=="4")
+		if(op=="5")
+		{
+			test->metis(txt_name,sign);
+		}
+		else if(op=="4")
 		{
 			test->randEntity(txt_name,sign);
 		}
@@ -32,6 +31,8 @@ main(int argc, char* argv[])
 				test->unionEdgeForEnum();
 			else if(op=="2")
 				test->unionEdgeForGreed();
+			else if(op=="6"||op=="7")
+				test->FS(op);
 			else
 				test->greed2();
 		}
