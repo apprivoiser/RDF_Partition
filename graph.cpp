@@ -10,6 +10,7 @@ graph::init()
 {
 	vector<pair<int,int> >tmp;
 	edge.push_back(tmp);
+	id_list.push_back(tmp);
 	entityTriples.push_back(0);
 	IDToEntity.push_back("");
 	IDToPredicate.push_back("");
@@ -33,6 +34,7 @@ graph::loadGraph(string txt_name,string tag)
 			entityToID[s[i]]=++entityCnt;
 			IDToEntity.push_back(s[i]);
 			entityTriples.push_back(0);
+			id_list.push_back(tmp);
 		}
 		edge_cnt[s[1]]++;
 		int a=entityToID[s[0]];
@@ -47,6 +49,8 @@ graph::loadGraph(string txt_name,string tag)
 			}		
 			int b=entityToID[s[2]];
 			edge[predicateToID[s[1]]].push_back(make_pair(a,b));	
+			id_list[a].push_back(make_pair(b, predicateToID[s[1]]));
+			id_list[b].push_back(make_pair(a, predicateToID[s[1]]));
 			entityTriples[b]++;
 		}
 	}
@@ -452,6 +456,116 @@ graph::greed2()
 	unionBlock(choice,part);
 }
 
+void
+graph::FS(string op)
+{
+	invalid=vector<bool>(preType+1,0);
+	vector<int> FA(entityCnt+1);
+    for(int i=1;i<=entityCnt;i++)FA[i]=i;
+    vector<int> RANK(entityCnt+1,0);
+	vector<int> SONCNT(entityCnt+1,1);
+    vector<int> choice(preType+1,0);
+    vector<pair<int,int> >arr;
+	for(int preID=1;preID<=preType;preID++)
+	{
+		vector<int> color(entityCnt+1,0);
+		int num=0;
+		for(int e=1;e<=entityCnt;e++)
+		{
+			if(!color[e])
+			{
+				int ret;
+				if(op=="6")
+					ret=DFS(e,preID,++num,color);
+				else 
+					ret=BFS(e,preID,++num,color);
+				if(ret>=limit)
+				{
+					invalid[preID]=1;
+                    printf("invalid: %d\n",preID);
+                    break;
+				}
+			}
+		}
+		if(invalid[preID])continue;
+		for(int e=1;e<=entityCnt;e++)if(!color[e],1)num++;
+	    arr.push_back(make_pair(num,preID));
+	}
+	sort(arr.begin(),arr.end());
+	for(int i=arr.size()-1;i>=0;i--)
+    {
+        int preID=arr[i].second;
+        // cout<<preID<<" "<<arr[i].first<<endl;
+        for(int p=0;p<edge[preID].size();p++)
+        {
+
+        	int A=edge[preID][p].first,B=edge[preID][p].second;
+            int parentA=getParent(A,FA),parentB=getParent(B,FA);
+
+            if(RANK[parentA]<RANK[parentB])swap(parentA,parentB);
+            if(parentA!=parentB)
+            {
+                FA[parentB]=parentA;
+                SONCNT[parentA]+=SONCNT[parentB];
+                RANK[parentA]=max(RANK[parentA],RANK[parentB]+1);
+                if(SONCNT[parentA]>limit)
+                {
+                    invalid[preID]=1;
+                    break;
+                }
+            }
+        }
+        if(invalid[preID])break;
+        choice[preID]=1;
+    }
+
+
+	int crossEdge=0;
+	for(int preID=1;preID<=preType;preID++)
+		if(choice[preID]==0)cout<<preID<<"	"<<IDToPredicate[preID]<<endl,crossEdge++;
+	printf("crossEdge: %d\n",crossEdge);
+	printf("\n");
+	unionBlock(choice,part);
+}
+
+int  
+graph::DFS(int e,int pre,int c,vector<int> &color)
+{
+	color[e]=c;
+	int ret=1;
+	for(int i=0;i<id_list[e].size();i++)if(id_list[e][i].second==pre)
+	{
+		int nxt=id_list[e][i].first;
+		if(!color[nxt]) ret+=DFS(nxt,pre,c,color);
+	}
+	return ret;
+}
+
+int
+graph::BFS(int e,int pre,int c,vector<int> &color)
+{
+	queue<int> q;
+	q.push(e);
+	color[e]=c;
+	int ret=0;
+	while(!q.empty())
+	{
+		e=q.front();
+		q.pop();
+		ret++;
+		for(int i=0;i<id_list[e].size();i++)if(id_list[e][i].second==pre)
+		{
+			int nxt=id_list[e][i].first;
+			if(!color[nxt]) 
+			{
+				color[nxt]=c;
+				q.push(nxt);
+			}
+		}
+	}
+	return ret;
+}
+
 void 
 graph::unionBlock(vector<int> &choice,int goal)
 {
@@ -555,50 +669,50 @@ graph::randEntity(string txt_name,string tag)
 	// update();
 }
 
-// void 
-// graph::metis(string txt_name,string tag)
-// {
-//    ifstream in(txt_name.data());
-//    string str;
-//    entityCnt=0;
-//    vector<vector<int> > EDGE;
-//    EDGE.push_back(vector<int>());
-//    triples=0;
-//    while(getline(in,str))
-//    {
-//         triples++;
-//         str.resize(str.length()-2);
-//         vector<string> s;
-//         s=split(str,tag);
-//         predicate.insert(s[1]);
-//         for(int i=0;i<3;i+=2)if(entityToID.count(s[i])==0)
-//         {
-//                 entityToID[s[i]]=++entityCnt;
-//                 IDToEntity.push_back(s[i]);
-//                 EDGE.push_back(vector<int>());
-//         }
-//         EDGE[entityToID[s[0]]].push_back(entityToID[s[2]]);
-//         EDGE[entityToID[s[2]]].push_back(entityToID[s[0]]);
-//    }
-//    ofstream out(("/opt/workspace/metis/"+RDF+".tmp").data());
-//    out<<entityCnt<<" "<<triples<<endl;
-//    for(int i=1;i<EDGE.size();i++)
-//    {
-//         for(int j=0;j<EDGE[i].size();j++)
-//                 out<<EDGE[i][j]<<" ";
-//         out<<endl;
-//     }
+void 
+graph::metis(string txt_name,string tag)
+{
+   ifstream in(txt_name.data());
+   string str;
+   entityCnt=0;
+   vector<vector<int> > EDGE;
+   EDGE.push_back(vector<int>());
+   triples=0;
+   while(getline(in,str))
+   {
+        triples++;
+        str.resize(str.length()-2);
+        vector<string> s;
+        s=split(str,tag);
+        predicate.insert(s[1]);
+        for(int i=0;i<3;i+=2)if(entityToID.count(s[i])==0)
+        {
+                entityToID[s[i]]=++entityCnt;
+                IDToEntity.push_back(s[i]);
+                EDGE.push_back(vector<int>());
+        }
+        EDGE[entityToID[s[0]]].push_back(entityToID[s[2]]);
+        EDGE[entityToID[s[2]]].push_back(entityToID[s[0]]);
+   }
+   ofstream out(("/opt/workspace/metis/"+RDF+".tmp").data());
+   out<<entityCnt<<" "<<triples<<endl;
+   for(int i=1;i<EDGE.size();i++)
+   {
+        for(int j=0;j<EDGE[i].size();j++)
+                out<<EDGE[i][j]<<" ";
+        out<<endl;
+    }
 
-//    system(("/opt/workspace/metis-5.1.0/build/Linux-x86_64/programs/gpmetis /opt/workspace/metis/"+RDF+".tmp 4").data());
-//    ifstream In(("/opt/workspace/metis/"+RDF+".tmp.part.4").data());
-//    ofstream Out(("/opt/workspace/metis/"+RDF+"InternalPoints.txt").data());
-//    int idx=1;
-//    while(getline(In,str))
-//    {
-//         Out<<IDToEntity[idx++]<<"\t"<<atoi(str.c_str())<<endl;
-//    }
-//    update();
-// }
+   system(("/opt/workspace/metis-5.1.0/build/Linux-x86_64/programs/gpmetis /opt/workspace/metis/"+RDF+".tmp 7").data());
+   ifstream In(("/opt/workspace/metis/"+RDF+".tmp.part.7").data());
+   ofstream Out(("/opt/workspace/metis/"+RDF+"InternalPoints.txt").data());
+   int idx=1;
+   while(getline(In,str))
+   {
+        Out<<IDToEntity[idx++]<<"\t"<<atoi(str.c_str())<<endl;
+   }
+   // update();
+}
 
 // void 
 // graph::update()
