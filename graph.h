@@ -31,9 +31,12 @@ public:
 	int cal(long long cur);
 	void compareCrossingEdgeCnt(long long cur);
 	void greed2();
+	void FS(string op);
+	int DFS(int e,int pre,int c,vector<int> &color);
+	int BFS(int e,int pre,int c,vector<int> &color);
 	void unionBlock(vector<int> &choice,int goal);
 	void randEntity(string txt_name,string tag);
-	// void metis(string txt_name,string tag);
+	void metis(string txt_name,string tag);
 	// void update();
 	string RDF;	
 	int part;
@@ -51,6 +54,7 @@ private:
 	set<pair<string,int> >finalResult;
 	unordered_map<string,int> edge_cnt;
 	vector<bool> invalid;
+	vector<vector<pair<int, int> > > id_list;
 	int triples;
 	int entityCnt;
 	int preType;
