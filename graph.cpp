@@ -460,10 +460,10 @@ void
 graph::FS(string op)
 {
 	invalid=vector<bool>(preType+1,0);
-	vector<int> FA(entityCnt+1);
-    for(int i=1;i<=entityCnt;i++)FA[i]=i;
-    vector<int> RANK(entityCnt+1,0);
-	vector<int> SONCNT(entityCnt+1,1);
+	// vector<int> FA(entityCnt+1);
+ //    for(int i=1;i<=entityCnt;i++)FA[i]=i;
+ //    vector<int> RANK(entityCnt+1,0);
+	// vector<int> SONCNT(entityCnt+1,1);
     vector<int> choice(preType+1,0);
     vector<pair<int,int> >arr;
 	for(int preID=1;preID<=preType;preID++)
@@ -474,7 +474,7 @@ graph::FS(string op)
 		{
 			if(!color[e])
 			{
-				int ret;
+				int ret=0;
 				if(op=="6")
 					ret=DFS(e,preID,++num,color);
 				else 
@@ -488,35 +488,58 @@ graph::FS(string op)
 			}
 		}
 		if(invalid[preID])continue;
-		for(int e=1;e<=entityCnt;e++)if(!color[e],1)num++;
+		for(int e=1;e<=entityCnt;e++)if(!color[e])num++;
 	    arr.push_back(make_pair(num,preID));
 	}
 	sort(arr.begin(),arr.end());
+	vector<int> pre_set(preType+1,0);
 	for(int i=arr.size()-1;i>=0;i--)
     {
         int preID=arr[i].second;
         // cout<<preID<<" "<<arr[i].first<<endl;
-        for(int p=0;p<edge[preID].size();p++)
-        {
+        // for(int p=0;p<edge[preID].size();p++)
+        // {
 
-        	int A=edge[preID][p].first,B=edge[preID][p].second;
-            int parentA=getParent(A,FA),parentB=getParent(B,FA);
+        // 	int A=edge[preID][p].first,B=edge[preID][p].second;
+        //     int parentA=getParent(A,FA),parentB=getParent(B,FA);
 
-            if(RANK[parentA]<RANK[parentB])swap(parentA,parentB);
-            if(parentA!=parentB)
-            {
-                FA[parentB]=parentA;
-                SONCNT[parentA]+=SONCNT[parentB];
-                RANK[parentA]=max(RANK[parentA],RANK[parentB]+1);
-                if(SONCNT[parentA]>limit)
-                {
-                    invalid[preID]=1;
-                    break;
-                }
-            }
-        }
-        if(invalid[preID])break;
+        //     if(RANK[parentA]<RANK[parentB])swap(parentA,parentB);
+        //     if(parentA!=parentB)
+        //     {
+        //         FA[parentB]=parentA;
+        //         SONCNT[parentA]+=SONCNT[parentB];
+        //         RANK[parentA]=max(RANK[parentA],RANK[parentB]+1);
+        //         if(SONCNT[parentA]>limit)
+        //         {
+        //             invalid[preID]=1;
+        //             break;
+        //         }
+        //     }
+        // }
         choice[preID]=1;
+        pre_set[preID]=1;
+        vector<int> color(entityCnt+1,0);
+        for(int e=1;e<=entityCnt;e++)
+		{
+			if(!color[e])
+			{
+				int ret=0;
+				if(op=="6")
+					ret=DFS_Union(e,pre_set,color);
+				else 
+					ret=BFS_Union(e,pre_set,color);
+				if(ret>=limit)
+				{
+					invalid[preID]=1;
+                    break;
+				}
+			}
+		}
+        if(invalid[preID])
+        {
+        	choice[preID]=0;
+        	break;
+        }
     }
 
 
@@ -541,6 +564,19 @@ graph::DFS(int e,int pre,int c,vector<int> &color)
 	return ret;
 }
 
+int 
+graph::DFS_Union(int e,vector<int> &pre_set,vector<int> &color)
+{
+	color[e]=1;
+	int ret=1;
+	for(int i=0;i<id_list[e].size();i++)if(pre_set[id_list[e][i].second])
+	{
+		int nxt=id_list[e][i].first;
+		if(!color[nxt]) ret+=DFS_Union(nxt,pre_set,color);
+	}
+	return ret;
+}
+
 int
 graph::BFS(int e,int pre,int c,vector<int> &color)
 {
@@ -559,6 +595,31 @@ graph::BFS(int e,int pre,int c,vector<int> &color)
 			if(!color[nxt]) 
 			{
 				color[nxt]=c;
+				q.push(nxt);
+			}
+		}
+	}
+	return ret;
+}
+
+int 
+graph::BFS_Union(int e,vector<int> &pre_set,vector<int> &color)
+{
+	queue<int> q;
+	q.push(e);
+	color[e]=1;
+	int ret=0;
+	while(!q.empty())
+	{
+		e=q.front();
+		q.pop();
+		ret++;
+		for(int i=0;i<id_list[e].size();i++)if(pre_set[id_list[e][i].second])
+		{
+			int nxt=id_list[e][i].first;
+			if(!color[nxt]) 
+			{
+				color[nxt]=1;
 				q.push(nxt);
 			}
 		}
