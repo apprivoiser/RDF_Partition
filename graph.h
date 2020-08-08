@@ -34,6 +34,8 @@ public:
 	void FS(string op);
 	int DFS(int e,int pre,int c,vector<int> &color);
 	int BFS(int e,int pre,int c,vector<int> &color);
+	int DFS_Union(int e,vector<int> &pre_set,vector<int> &color);
+	int BFS_Union(int e,vector<int> &pre_set,vector<int> &color);
 	void unionBlock(vector<int> &choice,int goal);
 	void randEntity(string txt_name,string tag);
 	void metis(string txt_name,string tag);
